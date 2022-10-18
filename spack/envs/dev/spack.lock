@@ -1,0 +1,537 @@
+{
+  "_meta": {
+    "file-type": "spack-lockfile",
+    "lockfile-version": 4,
+    "specfile-version": 3
+  },
+  "roots": [
+    {
+      "hash": "wlksg5scmgajknov3watl2ttm3eeuuei",
+      "spec": "ucx@1.13.1+logging"
+    }
+  ],
+  "concrete_specs": {
+    "wlksg5scmgajknov3watl2ttm3eeuuei": {
+      "name": "ucx",
+      "version": "1.13.1",
+      "arch": {
+        "platform": "linux",
+        "platform_os": "debian11",
+        "target": {
+          "name": "skylake",
+          "vendor": "GenuineIntel",
+          "features": [
+            "adx",
+            "aes",
+            "avx",
+            "avx2",
+            "bmi1",
+            "bmi2",
+            "clflushopt",
+            "f16c",
+            "fma",
+            "mmx",
+            "movbe",
+            "pclmulqdq",
+            "popcnt",
+            "rdrand",
+            "rdseed",
+            "sse",
+            "sse2",
+            "sse4_1",
+            "sse4_2",
+            "ssse3",
+            "xsavec",
+            "xsaveopt"
+          ],
+          "generation": 0,
+          "parents": [
+            "broadwell"
+          ]
+        }
+      },
+      "compiler": {
+        "name": "gcc",
+        "version": "10.2.1"
+      },
+      "namespace": "builtin",
+      "parameters": {
+        "assertions": false,
+        "backtrace_detail": false,
+        "cma": false,
+        "cuda": false,
+        "dc": false,
+        "debug": false,
+        "dm": false,
+        "examples": true,
+        "gdrcopy": false,
+        "ib_hw_tm": false,
+        "java": false,
+        "knem": false,
+        "libs": [
+          "shared",
+          "static"
+        ],
+        "logging": true,
+        "mlx5_dv": false,
+        "openmp": true,
+        "opt": "3",
+        "optimizations": true,
+        "parameter_checking": false,
+        "pic": true,
+        "rc": false,
+        "rdmacm": false,
+        "rocm": false,
+        "simd": [
+          "auto"
+        ],
+        "thread_multiple": false,
+        "ucg": false,
+        "ud": false,
+        "verbs": false,
+        "vfs": false,
+        "xpmem": false,
+        "cflags": [],
+        "cppflags": [],
+        "cxxflags": [],
+        "fflags": [],
+        "ldflags": [],
+        "ldlibs": []
+      },
+      "package_hash": "3bzzt2gdpcf4nydnmc74vbd2cyvrbyiyae5ms557xqflx3nf7aba====",
+      "dependencies": [
+        {
+          "name": "numactl",
+          "hash": "yvb5j4yxw7ztgp5l3zi5ii4yzaq6x4gb",
+          "type": [
+            "build",
+            "link"
+          ]
+        },
+        {
+          "name": "pkg-config",
+          "hash": "x2joqjaultu6fxosji6hhcjv4yl2pdnj",
+          "type": [
+            "build"
+          ]
+        }
+      ],
+      "hash": "wlksg5scmgajknov3watl2ttm3eeuuei"
+    },
+    "yvb5j4yxw7ztgp5l3zi5ii4yzaq6x4gb": {
+      "name": "numactl",
+      "version": "2.0.14",
+      "arch": {
+        "platform": "linux",
+        "platform_os": "debian11",
+        "target": {
+          "name": "skylake",
+          "vendor": "GenuineIntel",
+          "features": [
+            "adx",
+            "aes",
+            "avx",
+            "avx2",
+            "bmi1",
+            "bmi2",
+            "clflushopt",
+            "f16c",
+            "fma",
+            "mmx",
+            "movbe",
+            "pclmulqdq",
+            "popcnt",
+            "rdrand",
+            "rdseed",
+            "sse",
+            "sse2",
+            "sse4_1",
+            "sse4_2",
+            "ssse3",
+            "xsavec",
+            "xsaveopt"
+          ],
+          "generation": 0,
+          "parents": [
+            "broadwell"
+          ]
+        }
+      },
+      "compiler": {
+        "name": "gcc",
+        "version": "10.2.1"
+      },
+      "namespace": "builtin",
+      "parameters": {
+        "patches": [
+          "4e1d78cbbb85de625bad28705e748856033eaafab92a66dffd383a3d7e00cc94",
+          "62fc8a8bf7665a60e8f4c93ebbd535647cebf74198f7afafec4c085a8825c006",
+          "ff37630df599cfabf0740518b91ec8daaf18e8f288b19adaae5364dc1f6b2296"
+        ],
+        "cflags": [],
+        "cppflags": [],
+        "cxxflags": [],
+        "fflags": [],
+        "ldflags": [],
+        "ldlibs": []
+      },
+      "patches": [
+        "4e1d78cbbb85de625bad28705e748856033eaafab92a66dffd383a3d7e00cc94",
+        "62fc8a8bf7665a60e8f4c93ebbd535647cebf74198f7afafec4c085a8825c006",
+        "ff37630df599cfabf0740518b91ec8daaf18e8f288b19adaae5364dc1f6b2296"
+      ],
+      "package_hash": "pdwatdyiz4tknjdhf5cagul5jvb6573vkioz3ais54bvvdec7zta====",
+      "dependencies": [
+        {
+          "name": "autoconf",
+          "hash": "hb7yisuc4yyfofhwkp36in4qwxcesrl4",
+          "type": [
+            "build"
+          ]
+        },
+        {
+          "name": "automake",
+          "hash": "xx44r2zeqgprr7a6hwkdtwqoorm2rhye",
+          "type": [
+            "build"
+          ]
+        },
+        {
+          "name": "libtool",
+          "hash": "jmppnqysey6aactvzuumuhfsmwljadrb",
+          "type": [
+            "build"
+          ]
+        },
+        {
+          "name": "m4",
+          "hash": "2th33xzyudjf2davzboeshe4k3qwlp45",
+          "type": [
+            "build"
+          ]
+        }
+      ],
+      "hash": "yvb5j4yxw7ztgp5l3zi5ii4yzaq6x4gb"
+    },
+    "hb7yisuc4yyfofhwkp36in4qwxcesrl4": {
+      "name": "autoconf",
+      "version": "2.69",
+      "arch": {
+        "platform": "linux",
+        "platform_os": "debian11",
+        "target": {
+          "name": "skylake",
+          "vendor": "GenuineIntel",
+          "features": [
+            "adx",
+            "aes",
+            "avx",
+            "avx2",
+            "bmi1",
+            "bmi2",
+            "clflushopt",
+            "f16c",
+            "fma",
+            "mmx",
+            "movbe",
+            "pclmulqdq",
+            "popcnt",
+            "rdrand",
+            "rdseed",
+            "sse",
+            "sse2",
+            "sse4_1",
+            "sse4_2",
+            "ssse3",
+            "xsavec",
+            "xsaveopt"
+          ],
+          "generation": 0,
+          "parents": [
+            "broadwell"
+          ]
+        }
+      },
+      "compiler": {
+        "name": "gcc",
+        "version": "10.2.1"
+      },
+      "namespace": "builtin",
+      "parameters": {
+        "patches": [
+          "7793209b33013dc0f81208718c68440c5aae80e7a1c4b8d336e382525af791a7"
+        ],
+        "cflags": [],
+        "cppflags": [],
+        "cxxflags": [],
+        "fflags": [],
+        "ldflags": [],
+        "ldlibs": []
+      },
+      "external": {
+        "path": "/usr",
+        "module": null,
+        "extra_attributes": {}
+      },
+      "patches": [
+        "7793209b33013dc0f81208718c68440c5aae80e7a1c4b8d336e382525af791a7"
+      ],
+      "package_hash": "eeg7bz7gzbvc5zxubjqkspni3o2is2ucol4myxeus7zmsnwhi2wq====",
+      "hash": "hb7yisuc4yyfofhwkp36in4qwxcesrl4"
+    },
+    "xx44r2zeqgprr7a6hwkdtwqoorm2rhye": {
+      "name": "automake",
+      "version": "1.16.3",
+      "arch": {
+        "platform": "linux",
+        "platform_os": "debian11",
+        "target": {
+          "name": "skylake",
+          "vendor": "GenuineIntel",
+          "features": [
+            "adx",
+            "aes",
+            "avx",
+            "avx2",
+            "bmi1",
+            "bmi2",
+            "clflushopt",
+            "f16c",
+            "fma",
+            "mmx",
+            "movbe",
+            "pclmulqdq",
+            "popcnt",
+            "rdrand",
+            "rdseed",
+            "sse",
+            "sse2",
+            "sse4_1",
+            "sse4_2",
+            "ssse3",
+            "xsavec",
+            "xsaveopt"
+          ],
+          "generation": 0,
+          "parents": [
+            "broadwell"
+          ]
+        }
+      },
+      "compiler": {
+        "name": "gcc",
+        "version": "10.2.1"
+      },
+      "namespace": "builtin",
+      "parameters": {
+        "cflags": [],
+        "cppflags": [],
+        "cxxflags": [],
+        "fflags": [],
+        "ldflags": [],
+        "ldlibs": []
+      },
+      "external": {
+        "path": "/usr",
+        "module": null,
+        "extra_attributes": {}
+      },
+      "package_hash": "rmm7eztal54ozyhywcibq7gwssiij7ibwjiuaosrrkxs2x4hxgda====",
+      "hash": "xx44r2zeqgprr7a6hwkdtwqoorm2rhye"
+    },
+    "jmppnqysey6aactvzuumuhfsmwljadrb": {
+      "name": "libtool",
+      "version": "2.4.7",
+      "arch": {
+        "platform": "linux",
+        "platform_os": "debian11",
+        "target": {
+          "name": "skylake",
+          "vendor": "GenuineIntel",
+          "features": [
+            "adx",
+            "aes",
+            "avx",
+            "avx2",
+            "bmi1",
+            "bmi2",
+            "clflushopt",
+            "f16c",
+            "fma",
+            "mmx",
+            "movbe",
+            "pclmulqdq",
+            "popcnt",
+            "rdrand",
+            "rdseed",
+            "sse",
+            "sse2",
+            "sse4_1",
+            "sse4_2",
+            "ssse3",
+            "xsavec",
+            "xsaveopt"
+          ],
+          "generation": 0,
+          "parents": [
+            "broadwell"
+          ]
+        }
+      },
+      "compiler": {
+        "name": "gcc",
+        "version": "10.2.1"
+      },
+      "namespace": "builtin",
+      "parameters": {
+        "cflags": [],
+        "cppflags": [],
+        "cxxflags": [],
+        "fflags": [],
+        "ldflags": [],
+        "ldlibs": []
+      },
+      "package_hash": "7lyavyiwpnrhw7tfv5vgri32at345gdegbixiskk63ext2f5rzza====",
+      "dependencies": [
+        {
+          "name": "m4",
+          "hash": "2th33xzyudjf2davzboeshe4k3qwlp45",
+          "type": [
+            "build"
+          ]
+        }
+      ],
+      "hash": "jmppnqysey6aactvzuumuhfsmwljadrb"
+    },
+    "2th33xzyudjf2davzboeshe4k3qwlp45": {
+      "name": "m4",
+      "version": "1.4.18",
+      "arch": {
+        "platform": "linux",
+        "platform_os": "debian11",
+        "target": {
+          "name": "skylake",
+          "vendor": "GenuineIntel",
+          "features": [
+            "adx",
+            "aes",
+            "avx",
+            "avx2",
+            "bmi1",
+            "bmi2",
+            "clflushopt",
+            "f16c",
+            "fma",
+            "mmx",
+            "movbe",
+            "pclmulqdq",
+            "popcnt",
+            "rdrand",
+            "rdseed",
+            "sse",
+            "sse2",
+            "sse4_1",
+            "sse4_2",
+            "ssse3",
+            "xsavec",
+            "xsaveopt"
+          ],
+          "generation": 0,
+          "parents": [
+            "broadwell"
+          ]
+        }
+      },
+      "compiler": {
+        "name": "gcc",
+        "version": "10.2.1"
+      },
+      "namespace": "builtin",
+      "parameters": {
+        "patches": [
+          "3877ab548f88597ab2327a2230ee048d2d07ace1062efe81fc92e91b7f39cd00",
+          "fc9b61654a3ba1a8d6cd78ce087e7c96366c290bc8d2c299f09828d793b853c8"
+        ],
+        "sigsegv": true,
+        "cflags": [],
+        "cppflags": [],
+        "cxxflags": [],
+        "fflags": [],
+        "ldflags": [],
+        "ldlibs": []
+      },
+      "external": {
+        "path": "/usr",
+        "module": null,
+        "extra_attributes": {}
+      },
+      "patches": [
+        "3877ab548f88597ab2327a2230ee048d2d07ace1062efe81fc92e91b7f39cd00",
+        "fc9b61654a3ba1a8d6cd78ce087e7c96366c290bc8d2c299f09828d793b853c8"
+      ],
+      "package_hash": "vxwx3k2qdjrdtwd3nggzkk6yrnvvp6xlix7dix4gbwyuhyicxjiq====",
+      "hash": "2th33xzyudjf2davzboeshe4k3qwlp45"
+    },
+    "x2joqjaultu6fxosji6hhcjv4yl2pdnj": {
+      "name": "pkg-config",
+      "version": "0.29.2",
+      "arch": {
+        "platform": "linux",
+        "platform_os": "debian11",
+        "target": {
+          "name": "skylake",
+          "vendor": "GenuineIntel",
+          "features": [
+            "adx",
+            "aes",
+            "avx",
+            "avx2",
+            "bmi1",
+            "bmi2",
+            "clflushopt",
+            "f16c",
+            "fma",
+            "mmx",
+            "movbe",
+            "pclmulqdq",
+            "popcnt",
+            "rdrand",
+            "rdseed",
+            "sse",
+            "sse2",
+            "sse4_1",
+            "sse4_2",
+            "ssse3",
+            "xsavec",
+            "xsaveopt"
+          ],
+          "generation": 0,
+          "parents": [
+            "broadwell"
+          ]
+        }
+      },
+      "compiler": {
+        "name": "gcc",
+        "version": "10.2.1"
+      },
+      "namespace": "builtin",
+      "parameters": {
+        "internal_glib": true,
+        "cflags": [],
+        "cppflags": [],
+        "cxxflags": [],
+        "fflags": [],
+        "ldflags": [],
+        "ldlibs": []
+      },
+      "external": {
+        "path": "/usr",
+        "module": null,
+        "extra_attributes": {}
+      },
+      "package_hash": "gbg7cfatgrssz3uo55zzkox2fzkpr4san6eijcbszseublk6ohfa====",
+      "hash": "x2joqjaultu6fxosji6hhcjv4yl2pdnj"
+    }
+  }
+}

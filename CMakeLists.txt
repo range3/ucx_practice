@@ -72,6 +72,8 @@ CPMAddPackage(
 # find_package(MPI REQUIRED)
 
 include(cmake/version.cmake)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(Ucx REQUIRED IMPORTED_TARGET ucx)
 
 # ---- Add source files ----
 
@@ -93,7 +95,7 @@ set_target_properties(
 target_compile_options(server PUBLIC "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/permissive->")
 target_link_libraries(
   server PRIVATE fmt::fmt cxxopts::cxxopts nlohmann_json::nlohmann_json spdlog::spdlog
-                 ucx_practice::ucx_practice_version stdc++fs
+                 ucx_practice::ucx_practice_version stdc++fs PkgConfig::Ucx
 )
 install(TARGETS server DESTINATION "${CMAKE_INSTALL_BINDIR}")
 
@@ -107,6 +109,6 @@ set_target_properties(
 target_compile_options(client PUBLIC "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/permissive->")
 target_link_libraries(
   client PRIVATE fmt::fmt cxxopts::cxxopts nlohmann_json::nlohmann_json spdlog::spdlog
-                 ucx_practice::ucx_practice_version stdc++fs
+                 ucx_practice::ucx_practice_version stdc++fs PkgConfig::Ucx
 )
 install(TARGETS client DESTINATION "${CMAKE_INSTALL_BINDIR}")

@@ -13,6 +13,9 @@ x-common:
     - dot-spack:/home/vscode/.spack
   networks:
     ucx_practice_net:
+  shm_size: '5gb'
+  ulimits:
+      memlock: -1
   cap_add:
     - SYS_PTRACE
   security_opt:
