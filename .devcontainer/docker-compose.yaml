@@ -1,0 +1,68 @@
+version: "3.9"
+x-common:
+  &x-common
+  build:
+    context: .
+    dockerfile: Dockerfile
+  init: true
+  environment:
+    DEV_HOSTS: d1,d2,d3,d4
+  volumes:
+    - ..:/workspaces/ucx-practice:cached
+    - spack:/home/vscode/.cache/spack
+    - dot-spack:/home/vscode/.spack
+  networks:
+    ucx_practice_net:
+  cap_add:
+    - SYS_PTRACE
+  security_opt:
+    - seccomp:unconfined
+  privileged: true
+  command: >
+    bash -c "sudo service ssh restart && sleep infinity"
+  extra_hosts:
+    - d1:172.33.0.2
+    - d2:172.33.0.3
+    - d3:172.33.0.4
+    - d4:172.33.0.5
+
+services:
+  dev1:
+    <<: *x-common
+    hostname: d1
+    networks:
+      ucx_practice_net:
+        ipv4_address: 172.33.0.2
+  dev2:
+    <<: *x-common
+    hostname: d2
+    networks:
+      ucx_practice_net:
+        ipv4_address: 172.33.0.3
+  dev3:
+    <<: *x-common
+    hostname: d3
+    networks:
+      ucx_practice_net:
+        ipv4_address: 172.33.0.4
+  dev4:
+    <<: *x-common
+    hostname: d4
+    networks:
+      ucx_practice_net:
+        ipv4_address: 172.33.0.5
+
+networks:
+  ucx_practice_net:
+    name: ucx_practice_net
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.33.0.0/16
+
+volumes:
+  spack:
+    external: true
+  dot-spack:
+    external: true

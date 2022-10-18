@@ -1,0 +1,21 @@
+{
+  "name": "range3/dev-cpp",
+  "dockerComposeFile": [
+    "./docker-compose.yaml"
+  ],
+  "service": "dev1",
+  "workspaceFolder": "/workspaces/ucx-practice",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools",
+        "ms-vscode.cmake-tools",
+        "cheshirekow.cmake-format",
+        "ms-python.python"
+      ]
+    }
+  },
+  "remoteUser": "vscode",
+  "postCreateCommand": "sudo apt update",
+  "postStartCommand": "sudo service ssh restart"
+}
