@@ -12,7 +12,7 @@ auto main(int argc, char const* argv[]) -> int {
   ucs_status_t status;
   memset(&ucp_params, 0, sizeof(ucp_params));
   ucp_params.field_mask = UCP_PARAM_FIELD_FEATURES;
-  ucp_params.features = UCP_FEATURE_AM;
+  ucp_params.features = UCP_FEATURE_RMA | UCP_FEATURE_AM;
 
   spdlog::info("ucp init");
   status = ucp_init(&ucp_params, nullptr, &ucp_context);
