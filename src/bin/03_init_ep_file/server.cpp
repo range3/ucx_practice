@@ -4,7 +4,43 @@
 #include <spdlog/spdlog.h>
 #include <ucp/api/ucp.h>
 
-#include <iterator>
+#include <fstream>
+#include <string>
+
+bool write_worker_address(ucp_worker_h worker, std::string file) {
+  ucp_address_t* addr;
+  size_t addrlen;
+  ucs_status_t status;
+  status = ucp_worker_get_address(worker, &addr, &addrlen);
+  if (status != UCS_OK) {
+    spdlog::error("failed to ucp_worker_get_address: {}", ucs_status_string(status));
+    return false;
+  }
+
+  ucp_worker_release_address(worker, addr);
+  status = ucp_worker_get_address(worker, &addr, &addrlen);
+  spdlog::info("worker address length = {}, address = {}", addrlen,
+               spdlog::to_hex((char*)addr, (char*)addr + addrlen));
+
+  std::ofstream ofs{file, std::ios::binary};
+  if (!ofs) {
+    spdlog::error("open error: {}", std::strerror(errno));
+    goto clean_addr;
+  }
+  ofs.exceptions(std::ios::failbit | std::ios::badbit);
+  try {
+    ofs.write((char*)addr, addrlen);
+    ofs.close();
+  } catch (std::ofstream::failure& err) {
+    spdlog::error("{}", err.what());
+    goto clean_addr;
+  }
+
+  return true;
+clean_addr:
+  ucp_worker_release_address(worker, addr);
+  return false;
+}
 
 auto main(int argc, char const* argv[]) -> int {
   spdlog::cfg::load_env_levels();
@@ -34,23 +70,14 @@ auto main(int argc, char const* argv[]) -> int {
     goto fail_worker_create;
   }
 
-  ucp_address_t* addr;
-  size_t addr_len;
-  status = ucp_worker_get_address(worker, &addr, &addr_len);
-  if (status != UCS_OK) {
-    spdlog::error("failed to ucp_worker_get_address: {}", ucs_status_string(status));
+  if (!write_worker_address(worker, "server_worker_addr")) {
     goto fail_worker_get_address;
   }
-  spdlog::info("worker address length = {}, address = {}", addr_len,
-               spdlog::to_hex((char*)addr, (char*)addr + addr_len));
-  ucp_worker_address_attr_t attr;
-  ucp_worker_address_query(addr, &attr);
 
   for (size_t i = 0; i < 10000; ++i) {
     ucp_worker_progress(worker);
   }
 
-  ucp_worker_release_address(worker, addr);
 fail_worker_get_address:
   ucp_worker_destroy(worker);
 fail_worker_create:
