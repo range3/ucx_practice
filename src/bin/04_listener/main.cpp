@@ -32,7 +32,9 @@ using app_context_t = struct app_context {
   app_state state = app_state::INIT;
 };
 
-ucs_status_t close_ep(ucp_worker_h* worker, ucp_ep_h* ep) {
+bool is_server(const cxxopts::ParseResult& parsed) { return parsed.count("server") != 0U; }
+
+auto close_ep(ucp_worker_h* worker, ucp_ep_h* ep) -> ucs_status_t {
   ucp_request_param_t params = {
       .op_attr_mask = UCP_OP_ATTR_FIELD_FLAGS,
       .flags = UCP_EP_CLOSE_MODE_FLUSH,
@@ -110,10 +112,12 @@ static void signal_handler(int sig, siginfo_t* info, void* ucontext) {
   }
 }
 
-ucs_status_t recv_cb(void* arg, const void* header, size_t header_length, void* data, size_t length,
-                     const ucp_am_recv_param_t* param) {
+auto recv_cb(void* arg, const void* header, size_t header_length, void* data, size_t length,
+             const ucp_am_recv_param_t* param) -> ucs_status_t {
   assert(!(param->recv_attr & UCP_AM_RECV_ATTR_FLAG_RNDV));
   assert(!(param->recv_attr & UCP_AM_RECV_ATTR_FLAG_DATA));
+
+  spdlog::debug("recb_cb header_length={}", header_length);
 
   size_t iov_count = *(size_t*)header;
   spdlog::info("recv_cb iov_count={}", iov_count);
@@ -124,8 +128,6 @@ ucs_status_t recv_cb(void* arg, const void* header, size_t header_length, void* 
     spdlog::info("recv_cb item: {}", ((char*)data) + offset);
     offset += iov_len[idx];
   }
-  int* comp = (int*)arg;
-  *comp = 1;
   return UCS_OK;
 }
 
@@ -134,9 +136,14 @@ void send_cb(void* request, ucs_status_t status, void* user_data) {
   ucp_request_free(request);
 }
 
-ucs_status_ptr_t send_msg_nbx(app_context_t* app) {
+  std::array<char, sizeof(size_t) * 3> header;
+  std::array<ucp_dt_iov_t, 2> iov;
+auto send_msg_nbx(app_context_t* app) -> ucs_status_ptr_t {
   ucp_request_param_t rparam = {
-      .op_attr_mask = UCP_OP_ATTR_FIELD_DATATYPE | UCP_OP_ATTR_FIELD_CALLBACK | UCP_OP_ATTR_FIELD_FLAGS | UCP_OP_ATTR_FIELD_USER_DATA,
+      .op_attr_mask = UCP_OP_ATTR_FIELD_DATATYPE
+        | UCP_OP_ATTR_FIELD_CALLBACK
+        | UCP_OP_ATTR_FIELD_FLAGS
+        | UCP_OP_ATTR_FIELD_USER_DATA,
       .flags = UCP_AM_SEND_FLAG_EAGER,
       .cb = {
           .send = send_cb,
@@ -146,8 +153,6 @@ ucs_status_ptr_t send_msg_nbx(app_context_t* app) {
   };
 
   const size_t iov_cnt = 2;
-  std::array<char, sizeof(size_t) * 3> header;
-  ucp_dt_iov_t iov[iov_cnt];
   iov[0].buffer = (void*)"Hello,";
   iov[0].length = sizeof("Hello,");
   iov[1].buffer = (void*)"World!";
@@ -163,10 +168,10 @@ ucs_status_ptr_t send_msg_nbx(app_context_t* app) {
     offset += sizeof(size_t);
     // "World!"
     *((size_t*)UCS_PTR_BYTE_OFFSET(header.data(), offset)) = iov[1].length;
-    offset += sizeof(size_t);
+    // offset += sizeof(size_t);
   }
 
-  return ucp_am_send_nbx(app->ep, 0, header.data(), header.size(), iov, iov_cnt, &rparam);
+  return ucp_am_send_nbx(app->ep, 0, header.data(), header.size(), iov.data(), iov.size(), &rparam);
 }
 
 auto main(int argc, char const* argv[]) -> int {
@@ -176,7 +181,7 @@ auto main(int argc, char const* argv[]) -> int {
   options.add_options()
     ("h,help", "Print usage")
     ("a,addr", "Address", cxxopts::value<std::string>()->default_value("0.0.0.0"))
-    ("p,port", "Port", cxxopts::value<std::string>()->default_value("40000"))
+    ("p,port", "Port", cxxopts::value<uint16_t>()->default_value("0"))
     ("S,server", "Server")
   ;
   // clang-format on
@@ -203,7 +208,7 @@ auto main(int argc, char const* argv[]) -> int {
   app_context_t app;
   ucp_params_t params = {
       .field_mask = UCP_PARAM_FIELD_FEATURES,
-      .features = UCP_FEATURE_AM | UCP_FEATURE_RMA | UCP_FEATURE_AMO64,
+      .features = UCP_FEATURE_AM, //| UCP_FEATURE_RMA | UCP_FEATURE_AMO64,
   };
   spdlog::info("ucp init");
   status = ucp_init(&params, nullptr, &app.ctx);
@@ -231,7 +236,7 @@ auto main(int argc, char const* argv[]) -> int {
         .cb = recv_cb,
         .arg = &app,
     };
-    status = ucp_worker_set_am_recv_handler(app.worker, &amparams);  // TODO: error handling
+    status = ucp_worker_set_am_recv_handler(app.worker, &amparams);
     if (status != UCS_OK) {
       spdlog::error("ucp_worker_set_am_recv_handler: {}", ucs_status_string(status));
       goto clean_worker;
@@ -243,7 +248,7 @@ auto main(int argc, char const* argv[]) -> int {
     spdlog::info("server listen");
     struct sockaddr_in listen_addr = {
       .sin_family = AF_INET,
-      .sin_port = htons(0),
+      .sin_port = htons(parsed["port"].as<uint16_t>()),
       .sin_addr = {
         .s_addr = INADDR_ANY,
       },
@@ -280,7 +285,7 @@ auto main(int argc, char const* argv[]) -> int {
   } else {
     // client
     int s = getaddrinfo(parsed["addr"].as<std::string>().c_str(),
-                        parsed["port"].as<std::string>().c_str(), nullptr, &conn_addr);
+                        std::to_string(parsed["port"].as<uint16_t>()).c_str(), nullptr, &conn_addr);
     if (s != 0) {
       spdlog::error("getaddrinfo: {}", gai_strerror(s));
       goto clean_worker;
@@ -311,6 +316,7 @@ auto main(int argc, char const* argv[]) -> int {
       goto clean_conn_addr;
     }
     ucp_ep_print_info(app.ep, stdout);
+    app.state = app_state::CONNECTED;
   }
 
   ucs_status_ptr_t nbx_send;
@@ -319,7 +325,7 @@ auto main(int argc, char const* argv[]) -> int {
       case app_state::INIT:
         break;
       case app_state::CONNECTED:
-        if (parsed.count("server") == 0U) {
+        if (!is_server(parsed)) {
           nbx_send = send_msg_nbx(&app);
           if (nbx_send == nullptr) {
             app.state = app_state::SENT;
@@ -354,11 +360,11 @@ auto main(int argc, char const* argv[]) -> int {
   }
 
 clean_conn_addr:
-  if (parsed.count("server") == 0U) {
+  if (!is_server(parsed)) {
     freeaddrinfo(conn_addr);
   }
 clean_listener:
-  if (parsed.count("server") != 0U) {
+  if (is_server(parsed)) {
     ucp_listener_destroy(app.listener);
   }
 clean_worker:
