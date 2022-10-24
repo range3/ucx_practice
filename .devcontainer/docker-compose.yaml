@@ -11,8 +11,6 @@ x-common:
     - ..:/workspaces/ucx-practice:cached
     - spack:/home/vscode/.cache/spack
     - dot-spack:/home/vscode/.spack
-  networks:
-    ucx_practice_net:
   shm_size: '5gb'
   ulimits:
       memlock: -1
@@ -23,46 +21,24 @@ x-common:
   privileged: true
   command: >
     bash -c "sudo service ssh restart && sleep infinity"
-  extra_hosts:
-    - d1:172.33.0.2
-    - d2:172.33.0.3
-    - d3:172.33.0.4
-    - d4:172.33.0.5
 
 services:
   dev1:
     <<: *x-common
     hostname: d1
-    networks:
-      ucx_practice_net:
-        ipv4_address: 172.33.0.2
+    container_name: ucx_d1
   dev2:
     <<: *x-common
     hostname: d2
-    networks:
-      ucx_practice_net:
-        ipv4_address: 172.33.0.3
+    container_name: ucx_d2
   dev3:
     <<: *x-common
     hostname: d3
-    networks:
-      ucx_practice_net:
-        ipv4_address: 172.33.0.4
+    container_name: ucx_d3
   dev4:
     <<: *x-common
     hostname: d4
-    networks:
-      ucx_practice_net:
-        ipv4_address: 172.33.0.5
-
-networks:
-  ucx_practice_net:
-    name: ucx_practice_net
-    driver: bridge
-    ipam:
-      driver: default
-      config:
-        - subnet: 172.33.0.0/16
+    container_name: ucx_d4
 
 volumes:
   spack:
