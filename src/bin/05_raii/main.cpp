@@ -14,6 +14,7 @@
 #include <iostream>
 #include <string>
 
+#include "ucxx/nbx_status.hpp"
 #include "ucxx/raii_types.hpp"
 
 enum class app_state {
@@ -43,37 +44,28 @@ auto close_ep(ucp_worker_h worker, ucp_ep_h ep) -> ucs_status_t {
       .op_attr_mask = UCP_OP_ATTR_FIELD_FLAGS,
       .flags = UCP_EP_CLOSE_MODE_FLUSH,
   };
-  ucs_status_t status;
-  ucs_status_ptr_t close;
-  close = ucp_ep_close_nbx(ep, &params);
-  if (close == nullptr) {
-    return UCS_OK;
+  ucxx::nbx_status nbx_close(ucp_ep_close_nbx(ep, &params));
+  ucs_status_t status = nbx_close.get();
+  if (status != UCS_INPROGRESS) {
+    return status;
   }
-  if (UCS_PTR_IS_ERR(close)) {
-    spdlog::error("ucp_ep_close_nbx: {}", ucs_status_string(UCS_PTR_STATUS(close)));
-    return UCS_PTR_STATUS(close);
-  }
-  status = ucp_request_check_status(close);
-  if (status == UCS_INPROGRESS) {
-    do {
-      ucp_worker_progress(worker);
-      status = UCS_PTR_STATUS(close);
-    } while (status == UCS_INPROGRESS);
-    if (status != UCS_OK) {
-      spdlog::error("ucp_ep_close_nbx: {}", ucs_status_string(status));
-      return status;
-    }
-    return UCS_OK;
-  }
-  spdlog::error("close_ep: unexpectecd status {}", ucs_status_string(status));
-  return UCS_OK;
+
+  do {
+    ucp_worker_progress(worker);
+    nbx_close.update();
+  } while (nbx_close.get() == UCS_INPROGRESS);
+
+  return nbx_close.get();
 }
 
 static void err_cb(void* arg, ucp_ep_h ep, ucs_status_t status) {
   auto* app = reinterpret_cast<app_context_t*>(arg);
   spdlog::error("err_cb: {}", ucs_status_string(status));
   if (app->state != app_state::INIT) {
-    close_ep(app->worker.get(), ep);
+    ucs_status_t status;
+    if ((status = close_ep(app->worker.get(), ep)) != UCS_OK) {
+      spdlog::error("close_ep: {}", ucs_status_string(status));
+    }
     app->state = app_state::DISCONNECTING;
   }
 }
@@ -370,7 +362,10 @@ auto main(int argc, char const* argv[]) -> int {
   }
 
   if (app.state == app_state::CONNECTED) {
-    close_ep(app.worker.get(), app.ep);
+    ucs_status_t status;
+    if ((status = close_ep(app.worker.get(), app.ep)) != UCS_OK) {
+      spdlog::error("close_ep: {}", ucs_status_string(status));
+    }
   }
 
   return 0;
