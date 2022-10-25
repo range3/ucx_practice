@@ -1,3 +1,4 @@
+// #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_ERROR
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <signal.h>
@@ -60,11 +61,11 @@ auto close_ep(ucp_worker_h worker, ucp_ep_h ep) -> ucs_status_t {
 
 static void err_cb(void* arg, ucp_ep_h ep, ucs_status_t status) {
   auto* app = reinterpret_cast<app_context_t*>(arg);
-  spdlog::error("err_cb: {}", ucs_status_string(status));
+  SPDLOG_ERROR("err_cb: {}", ucs_status_string(status));
   if (app->state != app_state::INIT) {
     ucs_status_t status;
     if ((status = close_ep(app->worker.get(), ep)) != UCS_OK) {
-      spdlog::error("close_ep: {}", ucs_status_string(status));
+      SPDLOG_ERROR("close_ep: {}", ucs_status_string(status));
     }
     app->state = app_state::DISCONNECTING;
   }
@@ -78,10 +79,10 @@ void server_conn_handler_cb(ucp_conn_request_h conn_request, void* arg) {
   };
   status = ucp_conn_request_query(conn_request, &attr);
   if (status != UCS_OK) {
-    spdlog::error("ucp_conn_request_query: {}", ucs_status_string(status));
+    SPDLOG_ERROR("ucp_conn_request_query: {}", ucs_status_string(status));
     return;
   }
-  spdlog::info("ucp_conn_request_query: client_id={}", attr.client_id);
+  SPDLOG_INFO("ucp_conn_request_query: client_id={}", attr.client_id);
   ucp_ep_params_t params = {
     .field_mask = UCP_EP_PARAM_FIELD_CONN_REQUEST |
                   UCP_EP_PARAM_FIELD_ERR_HANDLING_MODE |
@@ -95,14 +96,14 @@ void server_conn_handler_cb(ucp_conn_request_h conn_request, void* arg) {
   };
   status = ucp_ep_create(app->worker.get(), &params, &app->ep);
   if (status != UCS_OK) {
-    spdlog::error("ucp_ep_create: {}", ucs_status_string(status));
+    SPDLOG_ERROR("ucp_ep_create: {}", ucs_status_string(status));
   }
   app->state = app_state::CONNECTED;
 }
 
 sig_atomic_t shutdown_desired;
 static void signal_handler(int sig, siginfo_t* info, void* ucontext) {
-  spdlog::info("signal_handler is called with sig={}", sig);
+  SPDLOG_INFO("signal_handler is called with sig={}", sig);
   if (sig == SIGINT) {
     shutdown_desired = 1;
   }
@@ -120,19 +121,19 @@ auto recv_cb(void* arg,
   spdlog::debug("recb_cb header_length={}", header_length);
 
   size_t iov_count = *(size_t*)header;
-  spdlog::info("recv_cb iov_count={}", iov_count);
+  SPDLOG_INFO("recv_cb iov_count={}", iov_count);
   auto* iov_len = (size_t*)UCS_PTR_BYTE_OFFSET(header, sizeof(size_t));
 
   size_t offset = 0;
   for (size_t idx = 0; idx < iov_count; idx++) {
-    spdlog::info("recv_cb item: {}", ((char*)data) + offset);
+    SPDLOG_INFO("recv_cb item: {}", ((char*)data) + offset);
     offset += iov_len[idx];
   }
   return UCS_OK;
 }
 
 void send_cb(void* request, ucs_status_t status, void* user_data) {
-  spdlog::info("send_cb: {}", ucs_status_string(status));
+  SPDLOG_INFO("send_cb: {}", ucs_status_string(status));
   ucp_request_free(request);
 }
 
@@ -176,6 +177,7 @@ auto send_msg_nbx(app_context_t* app) -> ucs_status_ptr_t {
 
 auto main(int argc, char const* argv[]) -> int {
   spdlog::cfg::load_env_levels();
+  spdlog::set_pattern("[%Y-%m-%dT%X%z] [%s:%!:%#] [thread %t] [%^ %l %$] %v");
   cxxopts::Options options("raii");
   // clang-format off
   options.add_options()
@@ -200,7 +202,7 @@ auto main(int argc, char const* argv[]) -> int {
   shutdown_desired = 0;
 
   if (sigaction(SIGINT, &sa_sigint, nullptr) < 0) {
-    spdlog::error("sigaction");
+    SPDLOG_ERROR("sigaction");
     return -1;
   }
 
@@ -210,11 +212,11 @@ auto main(int argc, char const* argv[]) -> int {
       .field_mask = UCP_PARAM_FIELD_FEATURES,
       .features = UCP_FEATURE_AM,  //| UCP_FEATURE_RMA | UCP_FEATURE_AMO64,
   };
-  spdlog::info("ucp init");
+  SPDLOG_INFO("ucp init");
   ucp_context_h ctx;
   status = ucp_init(&params, nullptr, &ctx);
   if (status != UCS_OK) {
-    spdlog::error("failed to ucp_init: {}", ucs_status_string(status));
+    SPDLOG_ERROR("failed to ucp_init: {}", ucs_status_string(status));
     return -1;
   }
   app.ctx.reset(ctx);
@@ -226,7 +228,7 @@ auto main(int argc, char const* argv[]) -> int {
   ucp_worker_h worker;
   status = ucp_worker_create(app.ctx.get(), &wparams, &worker);
   if (status != UCS_OK) {
-    spdlog::error("failed to ucp_worker_create: {}", ucs_status_string(status));
+    SPDLOG_ERROR("failed to ucp_worker_create: {}", ucs_status_string(status));
     return -1;
   }
   app.worker.reset(worker);
@@ -241,13 +243,13 @@ auto main(int argc, char const* argv[]) -> int {
   };
   status = ucp_worker_set_am_recv_handler(app.worker.get(), &amparams);
   if (status != UCS_OK) {
-    spdlog::error("ucp_worker_set_am_recv_handler: {}", ucs_status_string(status));
+    SPDLOG_ERROR("ucp_worker_set_am_recv_handler: {}", ucs_status_string(status));
     return -1;
   }
 
   std::unique_ptr<addrinfo, decltype(&::freeaddrinfo)> conn_addrinfo(nullptr, &::freeaddrinfo);
   if (parsed.count("server") != 0U) {
-    spdlog::info("server listen");
+    SPDLOG_INFO("server listen");
     struct sockaddr_in listen_addr = {
       .sin_family = AF_INET,
       .sin_port = htons(parsed["port"].as<uint16_t>()),
@@ -269,7 +271,7 @@ auto main(int argc, char const* argv[]) -> int {
     ucp_listener_h listener;
     status = ucp_listener_create(app.worker.get(), &listener_params, &listener);
     if (status != UCS_OK) {
-      spdlog::error("failed to ucp_listener_create: {}", ucs_status_string(status));
+      SPDLOG_ERROR("failed to ucp_listener_create: {}", ucs_status_string(status));
       return -1;
     }
     app.listener.reset(listener);
@@ -282,7 +284,7 @@ auto main(int argc, char const* argv[]) -> int {
     }
     std::array<char, 16> addr_str_buf;
     memcpy(&listen_addr, &attr.sockaddr, sizeof(struct sockaddr_in));
-    spdlog::info(
+    SPDLOG_INFO(
         "server listen on {}:{}",
         inet_ntop(AF_INET, &listen_addr.sin_addr.s_addr, addr_str_buf.data(), addr_str_buf.size()),
         ntohs(listen_addr.sin_port));
@@ -292,7 +294,7 @@ auto main(int argc, char const* argv[]) -> int {
     int s = getaddrinfo(parsed["addr"].as<std::string>().c_str(),
                         std::to_string(parsed["port"].as<uint16_t>()).c_str(), nullptr, &conn_addr);
     if (s != 0) {
-      spdlog::error("getaddrinfo: {}", gai_strerror(s));
+      SPDLOG_ERROR("getaddrinfo: {}", gai_strerror(s));
       return -1;
     }
     conn_addrinfo.reset(conn_addr);
@@ -318,7 +320,7 @@ auto main(int argc, char const* argv[]) -> int {
     };
     status = ucp_ep_create(app.worker.get(), &ep_params, &app.ep);
     if (status != UCS_OK) {
-      spdlog::error("ucp_ep_create: {}", ucs_status_string(status));
+      SPDLOG_ERROR("ucp_ep_create: {}", ucs_status_string(status));
       return -1;
     }
     ucp_ep_print_info(app.ep, stdout);
@@ -336,7 +338,7 @@ auto main(int argc, char const* argv[]) -> int {
           if (nbx_send == nullptr) {
             app.state = app_state::SENT;
           } else if (UCS_PTR_IS_ERR(nbx_send)) {
-            spdlog::error("send_msg_nbx: {}", ucs_status_string(UCS_PTR_RAW_STATUS(nbx_send)));
+            SPDLOG_ERROR("send_msg_nbx: {}", ucs_status_string(UCS_PTR_RAW_STATUS(nbx_send)));
             app.state = app_state::ERROR;
           } else {
             app.state = app_state::SENDING;
@@ -364,7 +366,7 @@ auto main(int argc, char const* argv[]) -> int {
   if (app.state == app_state::CONNECTED) {
     ucs_status_t status;
     if ((status = close_ep(app.worker.get(), app.ep)) != UCS_OK) {
-      spdlog::error("close_ep: {}", ucs_status_string(status));
+      SPDLOG_ERROR("close_ep: {}", ucs_status_string(status));
     }
   }
 
