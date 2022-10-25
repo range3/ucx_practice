@@ -1,7 +1,8 @@
 format:
   tab_size: 2
-  line_width: 100
-  dangle_parens: true
+  line_width: 80
+  dangle_parens: false
+  autosort: true
 
 parse:
   additional_commands:
@@ -55,3 +56,35 @@ parse:
         COMPATIBILITY: 1
         VERSION_HEADER: 1
         DEPENDENCIES: +
+    install_basic_package_files:
+      pargs: 1+
+      flags:
+        - ARCH_INDEPENDENT
+        - NO_EXPORT
+        - NO_SET_AND_CHECK_MACRO
+        - NO_CHECK_REQUIRED_COMPONENTS_MACRO
+      kwargs:
+        VERSION: "*"
+        COMPATIBILITY: "*"
+        VARS_PREFIX: "*"
+        EXPORT: "*"
+        EXPORT_DESTINATION: "*"
+        INSTALL_DESTINATION: "*"
+        NAMESPACE: "*"
+        EXTRA_PATH_VARS_SUFFIX: "*"
+        CONFIG_TEMPLATE: "*"
+        UPPERCASE_FILENAMES: "*"
+        DEPENDENCIES: "*"
+        PRIVATE_DEPENDENCIES: "*"
+        INCLUDE_FILE: "*"
+        INCLUDE_CONTENT: "*"
+        COMPONENT: "*"
+    add_install_rpath_support:
+      pargs: 1+
+      flags:
+        - USE_LINK_PATH
+      kwargs:
+        BIN_DIRS: "*"
+        LIB_DIRS: "*"
+        INSTALL_NAME_DIR: "*"
+        DEPENDS: "*"

@@ -113,8 +113,10 @@ target_link_libraries(
 )
 install(TARGETS client DESTINATION "${CMAKE_INSTALL_BINDIR}")
 
+add_subdirectory(src/lib/ucxx)
 add_subdirectory(src/bin/01_config)
 add_subdirectory(src/bin/02_init_cxt_worker)
 add_subdirectory(src/bin/03_init_ep_file)
 add_subdirectory(src/bin/04_listener)
+add_subdirectory(src/bin/05_raii)
 add_subdirectory(src/bin/99_ucp_client_server)

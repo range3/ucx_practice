@@ -1,5 +1,6 @@
 ---
-  BasedOnStyle: Google
+  BasedOnStyle: Chromium
+  CommentPragmas: \*|\s*\([cC] # Do not touch copyright comments and comments start with '*'
   AccessModifierOffset: '-2'
   AlignTrailingComments: 'true'
   AllowAllParametersOfDeclarationOnNextLine: 'false'
