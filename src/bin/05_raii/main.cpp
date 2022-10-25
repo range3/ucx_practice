@@ -1,4 +1,4 @@
-// #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_ERROR
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_DEBUG
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <signal.h>
@@ -15,7 +15,7 @@
 #include <iostream>
 #include <string>
 
-#include "ucxx/nbx_status.hpp"
+#include "ucxx/nb_status.hpp"
 #include "ucxx/raii_types.hpp"
 
 enum class app_state {
@@ -45,18 +45,22 @@ auto close_ep(ucp_worker_h worker, ucp_ep_h ep) -> ucs_status_t {
       .op_attr_mask = UCP_OP_ATTR_FIELD_FLAGS,
       .flags = UCP_EP_CLOSE_MODE_FLUSH,
   };
-  ucxx::nbx_status nbx_close(ucp_ep_close_nbx(ep, &params));
-  ucs_status_t status = nbx_close.get();
+
+  ucs_status_t status;
+  auto req = ucp_ep_close_nbx(ep, &params);
+  req = ucxx::get_status_and_valid_ptr(req, &status);
   if (status != UCS_INPROGRESS) {
     return status;
   }
 
   do {
     ucp_worker_progress(worker);
-    nbx_close.update();
-  } while (nbx_close.get() == UCS_INPROGRESS);
+    status = ucp_request_check_status(req);
+  } while (status == UCS_INPROGRESS);
 
-  return nbx_close.get();
+  ucp_request_free(req);
+
+  return status;
 }
 
 static void err_cb(void* arg, ucp_ep_h ep, ucs_status_t status) {
@@ -67,6 +71,7 @@ static void err_cb(void* arg, ucp_ep_h ep, ucs_status_t status) {
     if ((status = close_ep(app->worker.get(), ep)) != UCS_OK) {
       SPDLOG_ERROR("close_ep: {}", ucs_status_string(status));
     }
+    SPDLOG_DEBUG("disconnecting");
     app->state = app_state::DISCONNECTING;
   }
 }
@@ -90,7 +95,7 @@ void server_conn_handler_cb(ucp_conn_request_h conn_request, void* arg) {
     .err_mode = UCP_ERR_HANDLING_MODE_PEER,
     .err_handler = {
         .cb = err_cb,
-        .arg = &app,
+        .arg = app,
     },
     .conn_request = conn_request,
   };
@@ -118,7 +123,7 @@ auto recv_cb(void* arg,
   assert(!(param->recv_attr & UCP_AM_RECV_ATTR_FLAG_RNDV));
   assert(!(param->recv_attr & UCP_AM_RECV_ATTR_FLAG_DATA));
 
-  spdlog::debug("recb_cb header_length={}", header_length);
+  SPDLOG_DEBUG("recb_cb header_length={}", header_length);
 
   size_t iov_count = *(size_t*)header;
   SPDLOG_INFO("recv_cb iov_count={}", iov_count);
@@ -133,7 +138,7 @@ auto recv_cb(void* arg,
 }
 
 void send_cb(void* request, ucs_status_t status, void* user_data) {
-  SPDLOG_INFO("send_cb: {}", ucs_status_string(status));
+  SPDLOG_INFO("send_cb: {} {}", ucs_status_string(status), fmt::ptr(request));
   ucp_request_free(request);
 }
 
@@ -159,7 +164,6 @@ auto send_msg_nbx(app_context_t* app) -> ucs_status_ptr_t {
   iov[1].buffer = (void*)"World!";
   iov[1].length = sizeof("World!");
   {
-    // headerのシリアライズ。少し大変
     size_t offset = 0;
     // iov_cnt
     *((size_t*)UCS_PTR_BYTE_OFFSET(header.data(), offset)) = iov_cnt;
@@ -177,7 +181,7 @@ auto send_msg_nbx(app_context_t* app) -> ucs_status_ptr_t {
 
 auto main(int argc, char const* argv[]) -> int {
   spdlog::cfg::load_env_levels();
-  spdlog::set_pattern("[%Y-%m-%dT%X%z] [%s:%!:%#] [thread %t] [%^ %l %$] %v");
+  spdlog::set_pattern("[%Y-%m-%dT%X%z] [%s:%#:%!] [thread %t] [%^ %l %$] %v");
   cxxopts::Options options("raii");
   // clang-format off
   options.add_options()
@@ -327,36 +331,49 @@ auto main(int argc, char const* argv[]) -> int {
     app.state = app_state::CONNECTED;
   }
 
-  ucs_status_ptr_t nbx_send;
+  ucs_status_ptr_t nb_send_req;
   while (app.state != app_state::ERROR && shutdown_desired == 0) {
     switch (app.state) {
       case app_state::INIT:
         break;
       case app_state::CONNECTED:
         if (!is_server(parsed)) {
-          nbx_send = send_msg_nbx(&app);
-          if (nbx_send == nullptr) {
-            app.state = app_state::SENT;
-          } else if (UCS_PTR_IS_ERR(nbx_send)) {
-            SPDLOG_ERROR("send_msg_nbx: {}", ucs_status_string(UCS_PTR_RAW_STATUS(nbx_send)));
-            app.state = app_state::ERROR;
-          } else {
-            app.state = app_state::SENDING;
+          nb_send_req = send_msg_nbx(&app);
+          SPDLOG_DEBUG("nbx_send={}", fmt::ptr(nb_send_req));
+          nb_send_req = ucxx::get_status_and_valid_ptr(nb_send_req, &status);
+          switch (status) {
+            case UCS_OK:
+              app.state = app_state::SENT;
+              break;
+            case UCS_INPROGRESS:
+              app.state = app_state::SENDING;
+              break;
+            default:
+              SPDLOG_ERROR("send_msg_nbx: {}", ucs_status_string(status));
+              app.state = app_state::ERROR;
+              break;
           }
         }
         break;
       case app_state::SENDING:
-        status = ucp_request_check_status(nbx_send);
+        status = ucp_request_check_status(nb_send_req);
         if (status == UCS_OK) {
           app.state = app_state::SENT;
         } else if (status != UCS_INPROGRESS) {
           app.state = app_state::ERROR;
         }
         break;
-      case app_state::SENT:
-        break;
+      case app_state::SENT: {
+        if ((status = close_ep(app.worker.get(), app.ep)) != UCS_OK) {
+          SPDLOG_ERROR("close_ep: {}", ucs_status_string(status));
+        }
+        app.state = app_state::DISCONNECTED;
+      } break;
       case app_state::DISCONNECTING:
+        break;
       case app_state::DISCONNECTED:
+        shutdown_desired = 1;
+        break;
       default:
         break;
     }
